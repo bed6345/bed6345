@@ -1,9 +1,11 @@
 #include "protectionstones/plugin.h"
 
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -157,12 +159,24 @@ bool ProtectionStonesPlugin::onCommand(endstone::CommandSender &sender, const en
         return true;
     }
 
-    if (args.empty()) {
+    // The `/ps` usage declares a single `message` parameter, which EndStone
+    // delivers as one arg holding the whole remainder. Normalise to whitespace-
+    // separated tokens so the sub-command parsing below works regardless.
+    std::vector<std::string> tokens;
+    for (const std::string &chunk : args) {
+        std::istringstream iss(chunk);
+        std::string tok;
+        while (iss >> tok) {
+            tokens.push_back(tok);
+        }
+    }
+
+    if (tokens.empty()) {
         return cmdMenu(*player);
     }
 
-    const std::string sub = toLower(args[0]);
-    const std::vector<std::string> rest(args.begin() + 1, args.end());
+    const std::string sub = toLower(tokens[0]);
+    const std::vector<std::string> rest(tokens.begin() + 1, tokens.end());
 
     if (sub == "get") {
         return cmdGet(*player, rest);
@@ -586,9 +600,12 @@ ENDSTONE_PLUGIN("protectionstones", "1.0.0", ps::ProtectionStonesPlugin)
         .default_(endstone::PermissionDefault::Operator);
 
     // Command
+    // Sub-commands are dispatched manually in onCommand(), so a single greedy
+    // `message` argument captures everything after `/ps`. ('message' must be the
+    // last parameter — see EndStone's command usage rules.)
     command("ps")
         .description("Land protection commands")
-        .usages("/ps (get|delete|add|remove|transfer|list|bypass|menu) [args: message]...")
+        .usages("/ps [args: message]")
         .aliases("protectionstones", "land")
         .permissions("protectionstones.command");
 }
