@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <endstone/endstone.hpp>
@@ -27,6 +28,8 @@ struct Config {
     int max_claims_per_player{3};
     std::string border_particle{"minecraft:basic_flame_particle"};
     int border_seconds{10};
+    /// Permission -> claim-limit overrides; the highest matching tier wins.
+    std::vector<std::pair<std::string, int>> limit_tiers;
 };
 
 class ProtectionStonesPlugin : public endstone::Plugin {
@@ -57,6 +60,10 @@ public:
 
     [[nodiscard]] bool isBypassing(const std::string &xuid) const;
     void setBypassing(const std::string &xuid, bool on);
+
+    /// The claim limit that applies to this player: the base limit, raised by any
+    /// `limit_tiers` permission they hold.
+    [[nodiscard]] int claimLimitFor(const endstone::Player &player) const;
 
     /// Briefly renders the claim's border with particles for the given player.
     void showBorder(endstone::Player &player, const Claim &claim);

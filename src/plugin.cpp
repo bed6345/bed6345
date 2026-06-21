@@ -82,6 +82,13 @@ void ProtectionStonesPlugin::onLoad()
             config_.max_claims_per_player = j.value("max_claims_per_player", config_.max_claims_per_player);
             config_.border_particle = j.value("border_particle", config_.border_particle);
             config_.border_seconds = j.value("border_seconds", config_.border_seconds);
+            if (j.contains("limit_permissions") && j["limit_permissions"].is_object()) {
+                for (auto it = j["limit_permissions"].begin(); it != j["limit_permissions"].end(); ++it) {
+                    if (it.value().is_number_integer()) {
+                        config_.limit_tiers.emplace_back(it.key(), it.value().get<int>());
+                    }
+                }
+            }
         }
         catch (const std::exception &e) {
             getLogger().error("Failed to parse config.json ({}), using defaults", e.what());
@@ -92,6 +99,9 @@ void ProtectionStonesPlugin::onLoad()
         j["max_claims_per_player"] = config_.max_claims_per_player;
         j["border_particle"] = config_.border_particle;
         j["border_seconds"] = config_.border_seconds;
+        // Example permission tiers: a player holding "protectionstones.limit.vip"
+        // may own up to 10 claims. Add your own permission -> limit entries here.
+        j["limit_permissions"] = {{"protectionstones.limit.vip", 10}};
         std::ofstream out(config_path, std::ios::trunc);
         if (out.is_open()) {
             out << j.dump(2);
@@ -119,6 +129,7 @@ void ProtectionStonesPlugin::onEnable()
     registerEvent(&ProtectionListener::onBlockFromTo, *listener_, EventPriority::High);
     registerEvent(&ProtectionListener::onPistonExtend, *listener_, EventPriority::High);
     registerEvent(&ProtectionListener::onPistonRetract, *listener_, EventPriority::High);
+    registerEvent(&ProtectionListener::onActorSpawn, *listener_, EventPriority::High);
     registerEvent(&ProtectionListener::onActorDamage, *listener_, EventPriority::High);
     registerEvent(&ProtectionListener::onPlayerInteract, *listener_, EventPriority::High);
     registerEvent(&ProtectionListener::onPlayerJoin, *listener_);
@@ -228,6 +239,17 @@ void ProtectionStonesPlugin::setBypassing(const std::string &xuid, bool on)
     else {
         bypassing_.erase(xuid);
     }
+}
+
+int ProtectionStonesPlugin::claimLimitFor(const endstone::Player &player) const
+{
+    int limit = config_.max_claims_per_player;
+    for (const auto &[perm, value] : config_.limit_tiers) {
+        if (player.hasPermission(perm)) {
+            limit = std::max(limit, value);
+        }
+    }
+    return limit;
 }
 
 // ---------------------------------------------------------------------------

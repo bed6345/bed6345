@@ -14,6 +14,7 @@ class BlockPlaceEvent;
 class BlockBreakEvent;
 class BlockExplodeEvent;
 class ActorExplodeEvent;
+class ActorSpawnEvent;
 class BlockFromToEvent;
 class BlockPistonExtendEvent;
 class BlockPistonRetractEvent;
@@ -40,6 +41,7 @@ public:
     void onBlockFromTo(endstone::BlockFromToEvent &event);
     void onPistonExtend(endstone::BlockPistonExtendEvent &event);
     void onPistonRetract(endstone::BlockPistonRetractEvent &event);
+    void onActorSpawn(endstone::ActorSpawnEvent &event);  // falling sand/gravel
 
     // Gameplay flags
     void onActorDamage(endstone::ActorDamageEvent &event);

@@ -81,12 +81,19 @@ APIs, etc. Or clone `github.com/EndstoneMC/endstone` at tag `v0.11.4`.
 
 Events currently registered (see `onEnable`): `BlockPlace`, `BlockBreak`,
 `BlockExplode`, `ActorExplode`, `BlockFromTo`, `BlockPistonExtend/Retract`,
-`ActorDamage`, `PlayerInteract`, `PlayerJoin`.
+`ActorSpawn` (falling sand/gravel onto the centre column), `ActorDamage`,
+`PlayerInteract`, `PlayerJoin`.
+
+Per-player claim limits go through `claimLimitFor(player)`: the base
+`config.max_claims_per_player` raised by any `limit_permissions` tier the player
+holds. Don't read `config.max_claims_per_player` directly for enforcement.
 
 ## Known gaps / TODO
 
 - Full lava-flow protection is stubbed behind the `lava` flag (reserved, off).
-- No block-level fire-spread event is exposed by v0.11.4; fire protection covers
-  only what is catchable (liquid/fire flow onto the centre, explosions).
+- No block-level fire ignite/spread event is exposed by v0.11.4; fire protection
+  covers only what is catchable (liquid/fire flow onto the centre, explosions).
+  A full per-zone fire suppressor would need a periodic scan (CPU cost), so it is
+  intentionally not enabled.
 - Piston protection scans up to 12 blocks ahead for a centre block rather than
   reading the exact moved-block list (not exposed by the event).

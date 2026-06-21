@@ -27,6 +27,9 @@ public:
     /// Member management: list / add / remove / set level.
     void openMemberMenu(endstone::Player &player, std::uint64_t claim_id);
 
+    /// Add-member dialog: pick an online player + level (no typing required).
+    void openAddMember(endstone::Player &player, std::uint64_t claim_id);
+
     /// Toggle protection flags (pvp / explosion / fire / interact).
     void openFlagMenu(endstone::Player &player, std::uint64_t claim_id);
 

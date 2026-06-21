@@ -70,13 +70,14 @@ void ProtectionListener::onBlockPlace(endstone::BlockPlaceEvent &event)
         const int radius = radiusForSize(size);
         const std::string xuid = player.getXuid();
 
-        // Limit (operators / bypass are exempt).
+        // Limit (operators / bypass are exempt; permission tiers raise the cap).
         const bool exempt = player.isOp() || plugin_.isBypassing(xuid);
         if (!exempt) {
             const int count = plugin_.claims().countClaimsByOwner(xuid);
-            if (count >= plugin_.config().max_claims_per_player) {
+            const int limit = plugin_.claimLimitFor(player);
+            if (count >= limit) {
                 event.setCancelled(true);
-                tell(player, plugin_.lang().get("claim_limit", count, plugin_.config().max_claims_per_player));
+                tell(player, plugin_.lang().get("claim_limit", count, limit));
                 return;
             }
         }
@@ -234,6 +235,27 @@ void ProtectionListener::onPistonRetract(endstone::BlockPistonRetractEvent &even
     const Claim *c = plugin_.claims().getClaimAt(dim, x, z);
     if (c != nullptr && c->isCenter(x, y, z)) {
         event.setCancelled(true);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Falling block (sand/gravel): stop it from stacking on the centre pillar.
+// We can't catch fire spread (no such event in v0.11.4), but falling blocks
+// spawn as actors, so ActorSpawnEvent lets us guard the centre column cheaply.
+// ---------------------------------------------------------------------------
+void ProtectionListener::onActorSpawn(endstone::ActorSpawnEvent &event)
+{
+    endstone::Actor &actor = event.getActor();
+    // Cheap string check first; only then touch the spatial index.
+    if (actor.getType() != "minecraft:falling_block") {
+        return;
+    }
+    const endstone::Location loc = actor.getLocation();
+    const int x = loc.getBlockX();
+    const int z = loc.getBlockZ();
+    const Claim *claim = plugin_.claims().getClaimAt(actor.getDimension().getName(), x, z);
+    if (claim != nullptr && x == claim->center_x && z == claim->center_z) {
+        event.setCancelled(true);  // nothing may fall onto the centre column
     }
 }
 

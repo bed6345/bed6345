@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <endstone/endstone.hpp>
 #include <nlohmann/json.hpp>
@@ -85,6 +86,7 @@ void UiManager::openMemberMenu(endstone::Player &player, std::uint64_t claim_id)
 {
     Lang &lang = plugin_.lang();
     ProtectionStonesPlugin *plugin = &plugin_;
+    UiManager *self = this;
 
     Claim *claim = plugin_.claims().getClaim(claim_id);
     if (claim == nullptr) {
@@ -156,13 +158,84 @@ void UiManager::openMemberMenu(endstone::Player &player, std::uint64_t claim_id)
                        });
     }
 
-    // Adding members requires resolving an online player, so point to the command.
+    // Add-member: open a picker of online players (falls back to /ps add).
     form.addButton(endstone::Message(lang.get("members_add_button")), std::nullopt,
-                   [plugin](endstone::Player *p) {
+                   [self, claim_id](endstone::Player *p) {
                        if (p != nullptr) {
-                           tell(*p, plugin->lang().get("usage_add"));
+                           self->openAddMember(*p, claim_id);
                        }
                    });
+
+    player.sendForm(std::move(form));
+}
+
+// ---------------------------------------------------------------------------
+// Add-member dialog (pick an online player + level)
+// ---------------------------------------------------------------------------
+void UiManager::openAddMember(endstone::Player &player, std::uint64_t claim_id)
+{
+    Lang &lang = plugin_.lang();
+    ProtectionStonesPlugin *plugin = &plugin_;
+
+    Claim *claim = plugin_.claims().getClaim(claim_id);
+    if (claim == nullptr) {
+        tell(player, lang.get("not_in_claim"));
+        return;
+    }
+
+    // Candidates = online players who are not the owner and not already members.
+    std::vector<std::string> names;
+    for (endstone::Player *online : plugin_.getServer().getOnlinePlayers()) {
+        if (online == nullptr) {
+            continue;
+        }
+        const std::string xuid = online->getXuid();
+        if (xuid == claim->owner_xuid || claim->members.count(xuid) != 0) {
+            continue;
+        }
+        names.push_back(online->getName());
+    }
+    if (names.empty()) {
+        tell(player, lang.get("no_players_online"));
+        return;
+    }
+
+    endstone::ModalForm form;
+    form.setTitle(endstone::Message(lang.get("add_member_title")));
+    form.addControl(endstone::Dropdown(endstone::Message(lang.get("add_member_player")), names, 0));
+    form.addControl(endstone::Dropdown(endstone::Message(lang.get("add_member_level")),
+                                       {"member", "guest"}, 0));
+    form.setOnSubmit([plugin, claim_id, names](endstone::Player *p, std::string data) {
+        if (p == nullptr) {
+            return;
+        }
+        Claim *c = plugin->claims().getClaim(claim_id);
+        if (c == nullptr) {
+            return;
+        }
+        try {
+            const auto arr = nlohmann::json::parse(data);
+            const int player_idx = arr.at(0).get<int>();
+            const int level_idx = arr.at(1).get<int>();
+            if (player_idx < 0 || player_idx >= static_cast<int>(names.size())) {
+                return;
+            }
+            const std::string &name = names[player_idx];
+            endstone::Player *target = plugin->getServer().getPlayer(name);
+            if (target == nullptr) {
+                tell(*p, plugin->lang().get("player_not_online", name));
+                return;
+            }
+            const MemberLevel level = level_idx == 1 ? MemberLevel::Guest : MemberLevel::Member;
+            const std::string level_name =
+                plugin->lang().raw(level == MemberLevel::Guest ? "level_guest" : "level_member");
+            c->members[target->getXuid()] = MemberInfo{level, target->getName()};
+            plugin->claims().save();
+            tell(*p, plugin->lang().get("member_added", target->getName(), level_name));
+        }
+        catch (const std::exception &) {
+        }
+    });
 
     player.sendForm(std::move(form));
 }
