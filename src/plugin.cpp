@@ -31,9 +31,18 @@ MemberLevel parseLevel(const std::string &arg)
     return lower == "guest" ? MemberLevel::Guest : MemberLevel::Member;
 }
 
-/// Parses a size argument; returns false if not one of small/medium/large.
-bool parseSize(const std::string &arg, ClaimSize *out)
+/// Lowercases an ASCII string (commands/args are case-insensitive).
+std::string toLower(std::string s)
 {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return s;
+}
+
+/// Parses a size argument; returns false if not one of small/medium/large.
+bool parseSize(const std::string &raw_arg, ClaimSize *out)
+{
+    const std::string arg = toLower(raw_arg);
     if (arg == "small") {
         *out = ClaimSize::Small;
         return true;
@@ -141,7 +150,7 @@ bool ProtectionStonesPlugin::onCommand(endstone::CommandSender &sender, const en
         return cmdMenu(*player);
     }
 
-    const std::string &sub = args[0];
+    const std::string sub = toLower(args[0]);
     const std::vector<std::string> rest(args.begin() + 1, args.end());
 
     if (sub == "get") {

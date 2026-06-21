@@ -48,3 +48,15 @@ endstone_add_plugin(protectionstones
 
 target_include_directories(protectionstones PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(protectionstones PRIVATE nlohmann_json::nlohmann_json)
+
+# --- Core unit tests (EndStone-independent) ---------------------------------
+# Exercises the spatial index, overlap, removal and JSON round-trip without a
+# running server. Enable with -DPS_BUILD_TESTS=ON and run with `ctest`.
+option(PS_BUILD_TESTS "Build core unit tests" OFF)
+if (PS_BUILD_TESTS)
+    enable_testing()
+    add_executable(ps_test_core tests/test_claim_manager.cpp src/claim_manager.cpp)
+    target_include_directories(ps_test_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(ps_test_core PRIVATE nlohmann_json::nlohmann_json)
+    add_test(NAME core COMMAND ps_test_core)
+endif ()
