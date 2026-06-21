@@ -1,0 +1,127 @@
+#include "protectionstones/lang.h"
+
+#include <fstream>
+#include <system_error>
+
+#include <endstone/logger.h>
+#include <nlohmann/json.hpp>
+
+namespace ps {
+
+// Built-in Thai defaults. These are the single source of truth: on first run a
+// JSON copy is written next to the plugin so server owners can edit/translate.
+// Color codes use the Bedrock section sign (§).
+const std::unordered_map<std::string, std::string> &Lang::defaults()
+{
+    static const std::unordered_map<std::string, std::string> kDefaults = {
+        {"prefix", "§l§bProtectionStones §r"},
+        {"player_only", "§cคำสั่งนี้ใช้ได้เฉพาะผู้เล่นในเกมเท่านั้น"},
+        {"no_permission", "§cคุณไม่มีสิทธิ์ใช้คำสั่งนี้"},
+        {"usage_get", "§eวิธีใช้: /ps get <small|medium|large>"},
+        {"unknown_size", "§cขนาดไม่ถูกต้อง ใช้ได้: small, medium, large"},
+        {"got_block", "§aได้รับบล็อกป้องกันขนาด {} แล้ว วางลงเพื่อสร้างเขต"},
+        {"inventory_full", "§cช่องเก็บของเต็ม ไม่สามารถรับบล็อกได้"},
+        {"claim_created", "§aสร้างเขตป้องกันสำเร็จ! ขนาด {} (รัศมี {} บล็อก)"},
+        {"claim_overlap", "§cไม่สามารถวางได้: เขตนี้ทับซ้อนกับเขตที่มีอยู่แล้ว"},
+        {"claim_limit", "§cคุณมีเขตครบจำนวนสูงสุดแล้ว ({}/{})"},
+        {"build_denied", "§cคุณไม่มีสิทธิ์สร้าง/ทำลายบล็อกในเขตนี้"},
+        {"interact_denied", "§cคุณไม่มีสิทธิ์ใช้งานสิ่งของในเขตนี้"},
+        {"center_protected", "§cบล็อกศูนย์กลางถูกป้องกัน — เฉพาะเจ้าของเท่านั้นที่ลบได้"},
+        {"confirm_delete_title", "§cยืนยันการลบเขต"},
+        {"confirm_delete_body", "§eต้องการลบเขตป้องกันนี้จริงหรือไม่?\nการกระทำนี้ย้อนกลับไม่ได้"},
+        {"confirm_yes", "§cลบเขต"},
+        {"confirm_no", "§aยกเลิก"},
+        {"claim_deleted", "§aลบเขตป้องกันเรียบร้อยแล้ว"},
+        {"not_in_claim", "§cคุณไม่ได้อยู่ในเขตของคุณ"},
+        {"not_owner", "§cคุณไม่ใช่เจ้าของเขตนี้"},
+        {"usage_add", "§eวิธีใช้: /ps add <ชื่อผู้เล่น> [member|guest]"},
+        {"player_not_online", "§cไม่พบผู้เล่น \"{}\" ที่ออนไลน์อยู่"},
+        {"member_added", "§aเพิ่ม {} เป็น {} แล้ว"},
+        {"member_already", "§eผู้เล่น {} เป็นสมาชิกอยู่แล้ว (อัปเดตระดับเป็น {})"},
+        {"usage_remove", "§eวิธีใช้: /ps remove <ชื่อผู้เล่น>"},
+        {"member_removed", "§aลบ {} ออกจากสมาชิกแล้ว"},
+        {"member_not_found", "§cไม่พบสมาชิกชื่อ \"{}\" ในเขตนี้"},
+        {"usage_transfer", "§eวิธีใช้: /ps transfer <ชื่อผู้เล่น>"},
+        {"transferred", "§aโอนเขตให้ {} เรียบร้อยแล้ว"},
+        {"transferred_to_you", "§a{} ได้โอนเขตป้องกันให้คุณ"},
+        {"list_title", "§bเขตป้องกันของคุณ"},
+        {"list_empty", "§eคุณยังไม่มีเขตป้องกัน"},
+        {"list_entry", "§f#{} §7| {} §7| รัศมี {} §7| {}"},
+        {"warped", "§aวาร์ปไปยังเขต #{} แล้ว"},
+        {"bypass_on", "§aเปิดโหมดทะลุเขต (admin bypass) แล้ว"},
+        {"bypass_off", "§eปิดโหมดทะลุเขตแล้ว"},
+        {"menu_title", "§bเมนูจัดการเขตป้องกัน"},
+        {"menu_members", "§fจัดการสมาชิก"},
+        {"menu_flags", "§fตั้งค่าการป้องกัน (Flags)"},
+        {"menu_info", "§fดูข้อมูลเขต"},
+        {"menu_delete", "§cลบเขตนี้"},
+        {"menu_show_border", "§fแสดงขอบเขต"},
+        {"flags_title", "§bตั้งค่าการป้องกัน"},
+        {"flag_pvp", "อนุญาต PvP"},
+        {"flag_explosion", "อนุญาตการระเบิด"},
+        {"flag_fire", "อนุญาตไฟลาม"},
+        {"flag_interact", "อนุญาตให้ guest ใช้งานสิ่งของ"},
+        {"flags_saved", "§aบันทึกการตั้งค่าการป้องกันแล้ว"},
+        {"info_title", "§bข้อมูลเขตป้องกัน"},
+        {"info_body", "§7เจ้าของ: §f{}\n§7ขนาด: §f{} (รัศมี {})\n§7มิติ: §f{}\n§7ศูนย์กลาง: §f{}, {}, {}\n§7จำนวนสมาชิก: §f{}"},
+        {"members_title", "§bจัดการสมาชิก"},
+        {"members_add_button", "§a+ เพิ่มสมาชิก (ใช้ /ps add)"},
+        {"member_line", "{} §7({})"},
+        {"border_shown", "§aกำลังแสดงขอบเขต {} วินาที"},
+        {"size_small", "เล็ก (Small)"},
+        {"size_medium", "กลาง (Medium)"},
+        {"size_large", "ใหญ่ (Large)"},
+        {"level_member", "member"},
+        {"level_guest", "guest"},
+    };
+    return kDefaults;
+}
+
+const std::string &Lang::raw(const std::string &key) const
+{
+    auto it = messages_.find(key);
+    if (it != messages_.end()) {
+        return it->second;
+    }
+    return key;  // surface the missing key instead of throwing
+}
+
+void Lang::load(const std::filesystem::path &file, endstone::Logger &logger)
+{
+    // Start from the built-in defaults so new keys added in code always exist
+    // even if the on-disk file is from an older version.
+    messages_ = defaults();
+
+    std::ifstream in(file);
+    if (in.is_open()) {
+        try {
+            nlohmann::json root;
+            in >> root;
+            for (auto it = root.begin(); it != root.end(); ++it) {
+                if (it.value().is_string()) {
+                    messages_[it.key()] = it.value().get<std::string>();
+                }
+            }
+            logger.info("Loaded language file: {}", file.string());
+            return;
+        }
+        catch (const std::exception &e) {
+            logger.error("Failed to parse language file ({}), using defaults", e.what());
+        }
+    }
+
+    // No file (or unreadable): write out the defaults for the admin to edit.
+    std::error_code ec;
+    std::filesystem::create_directories(file.parent_path(), ec);
+    nlohmann::json out_json;
+    for (const auto &[key, value] : defaults()) {
+        out_json[key] = value;
+    }
+    std::ofstream out(file, std::ios::trunc);
+    if (out.is_open()) {
+        out << out_json.dump(2);
+        logger.info("Created default language file: {}", file.string());
+    }
+}
+
+}  // namespace ps

@@ -1,0 +1,12 @@
+# Build output
+/build/
+/cmake-build-*/
+*.o
+*.so
+*.a
+
+# Editor / IDE
+.idea/
+.vscode/
+*.user
+compile_commands.json
