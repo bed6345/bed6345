@@ -246,16 +246,28 @@ void ProtectionListener::onPistonRetract(endstone::BlockPistonRetractEvent &even
 void ProtectionListener::onActorSpawn(endstone::ActorSpawnEvent &event)
 {
     endstone::Actor &actor = event.getActor();
-    // Cheap string check first; only then touch the spatial index.
-    if (actor.getType() != "minecraft:falling_block") {
-        return;
-    }
     const endstone::Location loc = actor.getLocation();
     const int x = loc.getBlockX();
     const int z = loc.getBlockZ();
-    const Claim *claim = plugin_.claims().getClaimAt(actor.getDimension().getName(), x, z);
-    if (claim != nullptr && x == claim->center_x && z == claim->center_z) {
-        event.setCancelled(true);  // nothing may fall onto the centre column
+    const std::string dim = actor.getDimension().getName();
+    const Claim *claim = plugin_.claims().getClaimAt(dim, x, z);
+    if (claim == nullptr) {
+        return;
+    }
+
+    // Admin claims block ALL entity spawns except players and whitelisted types.
+    if (claim->size == ClaimSize::Admin && actor.asPlayer() == nullptr) {
+        const std::string &type = actor.getType();
+        const auto &whitelist = plugin_.config().admin_spawn_whitelist;
+        if (std::find(whitelist.begin(), whitelist.end(), type) == whitelist.end()) {
+            event.setCancelled(true);
+            return;
+        }
+    }
+
+    // Normal claims: only block falling blocks on the centre column.
+    if (actor.getType() == "minecraft:falling_block" && x == claim->center_x && z == claim->center_z) {
+        event.setCancelled(true);
     }
 }
 
@@ -312,6 +324,32 @@ void ProtectionListener::onPlayerInteract(endstone::PlayerInteractEvent &event)
         event.setCancelled(true);
         tell(event.getPlayer(), plugin_.lang().get("interact_denied"));
     }
+}
+
+// ---------------------------------------------------------------------------
+// Movement: prevent non-admin players from leaving an Admin claim.
+// ---------------------------------------------------------------------------
+void ProtectionListener::onPlayerMove(endstone::PlayerMoveEvent &event)
+{
+    endstone::Player &player = event.getPlayer();
+    const endstone::Location &from = event.getFrom();
+    const endstone::Location &to = event.getTo();
+    const std::string dim = player.getDimension().getName();
+
+    const Claim *claim = plugin_.claims().getClaimAt(dim, from.getBlockX(), from.getBlockZ());
+    if (claim == nullptr || claim->size != ClaimSize::Admin) {
+        return;
+    }
+
+    if (claim->contains(to.getBlockX(), to.getBlockZ())) {
+        return;
+    }
+
+    if (player.isOp() || plugin_.isBypassing(player.getXuid())) {
+        return;
+    }
+
+    event.setCancelled(true);
 }
 
 // ---------------------------------------------------------------------------

@@ -20,6 +20,7 @@ class BlockPistonExtendEvent;
 class BlockPistonRetractEvent;
 class ActorDamageEvent;
 class PlayerInteractEvent;
+class PlayerMoveEvent;
 class PlayerJoinEvent;
 }  // namespace endstone
 
@@ -46,6 +47,7 @@ public:
     // Gameplay flags
     void onActorDamage(endstone::ActorDamageEvent &event);
     void onPlayerInteract(endstone::PlayerInteractEvent &event);
+    void onPlayerMove(endstone::PlayerMoveEvent &event);
 
     // Housekeeping
     void onPlayerJoin(endstone::PlayerJoinEvent &event);

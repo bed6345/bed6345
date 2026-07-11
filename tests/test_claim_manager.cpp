@@ -164,6 +164,52 @@ static void test_refresh_display_name()
     CHECK(mgr.getClaim(c->id)->members.at("xuid_c").name == "NewCarol");
 }
 
+static void test_admin_claim()
+{
+    std::printf("test_admin_claim\n");
+    ClaimManager mgr(tmpFile("ps_t7.json"));
+    Claim *c = mgr.createClaim("xuid_op", "Admin", "Overworld", 0, 64, 0, ClaimSize::Admin);  // r250
+    CHECK(c != nullptr);
+    CHECK(c->size == ClaimSize::Admin);
+    CHECK(c->radius == 250);
+
+    CHECK(mgr.getClaimAt("Overworld", 0, 0) == c);
+    CHECK(mgr.getClaimAt("Overworld", 250, 250) == c);
+    CHECK(mgr.getClaimAt("Overworld", -250, -250) == c);
+    CHECK(mgr.getClaimAt("Overworld", 251, 0) == nullptr);
+    CHECK(mgr.getClaimAt("Overworld", 0, -251) == nullptr);
+
+    CHECK(c->contains(250, 250) == true);
+    CHECK(c->contains(251, 0) == false);
+}
+
+static void test_admin_persistence()
+{
+    std::printf("test_admin_persistence\n");
+    const auto path = tmpFile("ps_t8.json");
+    std::filesystem::remove(path);
+    std::uint64_t saved_id = 0;
+    {
+        ClaimManager mgr(path);
+        Claim *c = mgr.createClaim("xuid_op", "Admin", "Overworld", 500, 64, 500, ClaimSize::Admin);
+        saved_id = c->id;
+        mgr.save();
+    }
+    {
+        ClaimManager mgr(path);
+        mgr.load();
+        Claim *c = mgr.getClaim(saved_id);
+        CHECK(c != nullptr);
+        if (c != nullptr) {
+            CHECK(c->size == ClaimSize::Admin);
+            CHECK(c->radius == 250);
+            CHECK(c->owner_xuid == "xuid_op");
+        }
+        CHECK(mgr.getClaimAt("Overworld", 500, 500) == c);
+        CHECK(mgr.getClaimAt("Overworld", 750, 750) == c);
+    }
+}
+
 int main()
 {
     test_basic_lookup();
@@ -172,6 +218,8 @@ int main()
     test_owner_count_and_remove();
     test_persistence_roundtrip();
     test_refresh_display_name();
+    test_admin_claim();
+    test_admin_persistence();
 
     std::printf("\n%d checks, %d failure(s)\n", g_checks, g_failures);
     return g_failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

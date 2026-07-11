@@ -57,6 +57,10 @@ bool parseSize(const std::string &raw_arg, ClaimSize *out)
         *out = ClaimSize::Large;
         return true;
     }
+    if (arg == "admin") {
+        *out = ClaimSize::Admin;
+        return true;
+    }
     return false;
 }
 
@@ -91,6 +95,14 @@ void ProtectionStonesPlugin::onLoad()
                     }
                 }
             }
+            if (j.contains("admin_spawn_whitelist") && j["admin_spawn_whitelist"].is_array()) {
+                config_.admin_spawn_whitelist.clear();
+                for (const auto &v : j["admin_spawn_whitelist"]) {
+                    if (v.is_string()) {
+                        config_.admin_spawn_whitelist.push_back(v.get<std::string>());
+                    }
+                }
+            }
         }
         catch (const std::exception &e) {
             getLogger().error("Failed to parse config.json ({}), using defaults", e.what());
@@ -104,6 +116,7 @@ void ProtectionStonesPlugin::onLoad()
         // Example permission tiers: a player holding "protectionstones.limit.vip"
         // may own up to 10 claims. Add your own permission -> limit entries here.
         j["limit_permissions"] = {{"protectionstones.limit.vip", 10}};
+        j["admin_spawn_whitelist"] = config_.admin_spawn_whitelist;
         std::ofstream out(config_path, std::ios::trunc);
         if (out.is_open()) {
             out << j.dump(2);
@@ -134,6 +147,7 @@ void ProtectionStonesPlugin::onEnable()
     registerEvent(&ProtectionListener::onActorSpawn, *listener_, EventPriority::High);
     registerEvent(&ProtectionListener::onActorDamage, *listener_, EventPriority::High);
     registerEvent(&ProtectionListener::onPlayerInteract, *listener_, EventPriority::High);
+    registerEvent(&ProtectionListener::onPlayerMove, *listener_, EventPriority::High);
     registerEvent(&ProtectionListener::onPlayerJoin, *listener_);
 
     getLogger().info("ProtectionStones enabled");
@@ -595,6 +609,9 @@ ENDSTONE_PLUGIN("protectionstones", "1.0.0", ps::ProtectionStonesPlugin)
     permission("protectionstones.get.large")
         .description("Obtain a large (diamond) protection block")
         .default_(endstone::PermissionDefault::True);
+    permission("protectionstones.get.admin")
+        .description("Obtain an admin (netherite) protection block")
+        .default_(endstone::PermissionDefault::Operator);
     permission("protectionstones.bypass")
         .description("Bypass all claim protection (admin)")
         .default_(endstone::PermissionDefault::Operator);

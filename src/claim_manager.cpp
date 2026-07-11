@@ -19,6 +19,9 @@ ClaimSize sizeFromKey(const std::string &key)
     if (key == "large") {
         return ClaimSize::Large;
     }
+    if (key == "admin") {
+        return ClaimSize::Admin;
+    }
     return ClaimSize::Small;
 }
 

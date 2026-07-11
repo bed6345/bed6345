@@ -81,8 +81,9 @@ APIs, etc. Or clone `github.com/EndstoneMC/endstone` at tag `v0.11.4`.
 
 Events currently registered (see `onEnable`): `BlockPlace`, `BlockBreak`,
 `BlockExplode`, `ActorExplode`, `BlockFromTo`, `BlockPistonExtend/Retract`,
-`ActorSpawn` (falling sand/gravel onto the centre column), `ActorDamage`,
-`PlayerInteract`, `PlayerJoin`.
+`ActorSpawn` (falling sand/gravel onto the centre column; **all entities** in
+Admin claims), `ActorDamage`, `PlayerInteract`, `PlayerMove` (Admin no-leave),
+`PlayerJoin`.
 
 Per-player claim limits go through `claimLimitFor(player)`: the base
 `config.max_claims_per_player` raised by any `limit_permissions` tier the player

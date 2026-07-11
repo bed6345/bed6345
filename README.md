@@ -16,9 +16,15 @@
 | Iron Block | ~20×20 | 10 | `/ps get small` |
 | Gold Block | ~50×50 | 25 | `/ps get medium` |
 | Diamond Block | ~100×100 | 50 | `/ps get large` |
+| Netherite Block | ~500×500 | 250 | `/ps get admin` |
 
 > เขตครอบทั้งแท่ง Y (จากต่ำสุดถึงสูงสุดของโลก) — ตรวจสอบเฉพาะแกน X/Z
 > บล็อกป้องกันได้จากคำสั่งเสกเท่านั้น (เช็คสิทธิ์ผ่าน permission)
+>
+> **เขต Admin** (Netherite Block) มีคุณสมบัติพิเศษ:
+> - เฉพาะ OP เท่านั้นที่เสกได้
+> - ผู้เล่นที่อยู่ในเขตจะออกจากพื้นที่ไม่ได้ (admin bypass ออกได้)
+> - ไม่มี entity ใดๆ เกิดในเขต (mob, สัตว์ ฯลฯ)
 
 ---
 
@@ -85,7 +91,7 @@
 | --- | --- |
 | `claims.json` | เขตทั้งหมด (id, เจ้าของ XUID, สมาชิก, มิติ, ศูนย์กลาง, ขนาด, flags) |
 | `lang_th_TH.json` | ข้อความทั้งหมด (เริ่มเป็นภาษาไทย) — แก้ได้ไม่ต้องแตะโค้ด |
-| `config.json` | `max_claims_per_player` (default 3), `border_particle`, `border_seconds`, `limit_permissions` (permission → จำนวน claim) |
+| `config.json` | `max_claims_per_player` (default 3), `border_particle`, `border_seconds`, `limit_permissions` (permission → จำนวน claim), `admin_spawn_whitelist` (entity types ที่ spawn ในเขต Admin ได้ เช่น `["minecraft:npc"]`) |
 
 ไฟล์ `lang/th_TH.json` ใน repo เป็นชุดข้อความตัวอย่างไว้อ้างอิง
 
@@ -184,6 +190,7 @@ cmake --build build --config Release
 | `protectionstones.get.small` | ทุกคน | เสกบล็อกเล็ก |
 | `protectionstones.get.medium` | ทุกคน | เสกบล็อกกลาง |
 | `protectionstones.get.large` | ทุกคน | เสกบล็อกใหญ่ |
+| `protectionstones.get.admin` | OP | เสกบล็อกแอดมิน (500×500, no-leave, no-entity-spawn) |
 | `protectionstones.bypass` | OP | ทะลุทุกเขต (admin) |
 | `protectionstones.limit.*` | (ตั้งใน config) | ปรับเพดานจำนวน claim ต่อคน เช่น `protectionstones.limit.vip` → 10 |
 

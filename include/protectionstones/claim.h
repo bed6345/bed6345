@@ -20,11 +20,12 @@ enum class MemberLevel {
     Member,  ///< full build rights inside the claim
 };
 
-/// The three claim sizes, represented in-game by three vanilla blocks.
+/// The claim sizes, represented in-game by vanilla blocks.
 enum class ClaimSize {
-    Small,   ///< Iron Block   — radius 10 (~20x20)
-    Medium,  ///< Gold Block   — radius 25 (~50x50)
-    Large,   ///< Diamond Block — radius 50 (~100x100)
+    Small,   ///< Iron Block      — radius 10  (~20×20)
+    Medium,  ///< Gold Block      — radius 25  (~50×50)
+    Large,   ///< Diamond Block   — radius 50  (~100×100)
+    Admin,   ///< Netherite Block  — radius 250 (~500×500), OP-only
 };
 
 /// A single member entry. Keyed by XUID elsewhere; the name is only for display
@@ -91,6 +92,8 @@ inline int radiusForSize(ClaimSize size) noexcept
         return 25;
     case ClaimSize::Large:
         return 50;
+    case ClaimSize::Admin:
+        return 250;
     }
     return 10;
 }
@@ -105,6 +108,8 @@ inline const char *sizeKey(ClaimSize size) noexcept
         return "medium";
     case ClaimSize::Large:
         return "large";
+    case ClaimSize::Admin:
+        return "admin";
     }
     return "small";
 }
@@ -119,6 +124,8 @@ inline const char *blockTypeForSize(ClaimSize size) noexcept
         return "minecraft:gold_block";
     case ClaimSize::Large:
         return "minecraft:diamond_block";
+    case ClaimSize::Admin:
+        return "minecraft:netherite_block";
     }
     return "minecraft:iron_block";
 }
@@ -137,6 +144,10 @@ inline bool sizeForBlockType(const std::string &type, ClaimSize *out) noexcept
     }
     if (type == "minecraft:diamond_block") {
         *out = ClaimSize::Large;
+        return true;
+    }
+    if (type == "minecraft:netherite_block") {
+        *out = ClaimSize::Admin;
         return true;
     }
     return false;

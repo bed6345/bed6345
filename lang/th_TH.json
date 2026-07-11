@@ -2,8 +2,8 @@
   "prefix": "§l§bProtectionStones §r",
   "player_only": "§cคำสั่งนี้ใช้ได้เฉพาะผู้เล่นในเกมเท่านั้น",
   "no_permission": "§cคุณไม่มีสิทธิ์ใช้คำสั่งนี้",
-  "usage_get": "§eวิธีใช้: /ps get <small|medium|large>",
-  "unknown_size": "§cขนาดไม่ถูกต้อง ใช้ได้: small, medium, large",
+  "usage_get": "§eวิธีใช้: /ps get <small|medium|large|admin>",
+  "unknown_size": "§cขนาดไม่ถูกต้อง ใช้ได้: small, medium, large, admin",
   "got_block": "§aได้รับบล็อกป้องกันขนาด {} แล้ว วางลงเพื่อสร้างเขต",
   "inventory_full": "§cช่องเก็บของเต็ม ไม่สามารถรับบล็อกได้",
   "claim_created": "§aสร้างเขตป้องกันสำเร็จ! ขนาด {} (รัศมี {} บล็อก)",
@@ -60,6 +60,8 @@
   "size_small": "เล็ก (Small)",
   "size_medium": "กลาง (Medium)",
   "size_large": "ใหญ่ (Large)",
+  "size_admin": "แอดมิน (Admin)",
+  "no_leave": "§cคุณไม่สามารถออกจากเขตนี้ได้",
   "level_member": "member",
   "level_guest": "guest"
 }
