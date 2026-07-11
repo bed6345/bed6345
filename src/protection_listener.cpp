@@ -256,10 +256,24 @@ void ProtectionListener::onActorSpawn(endstone::ActorSpawnEvent &event)
     }
 
     // Admin claims block ALL entity spawns except players and whitelisted types.
+    // Whitelist entries ending with '*' are treated as prefix matches (e.g. "npcp:*").
     if (claim->size == ClaimSize::Admin && actor.asPlayer() == nullptr) {
         const std::string &type = actor.getType();
         const auto &whitelist = plugin_.config().admin_spawn_whitelist;
-        if (std::find(whitelist.begin(), whitelist.end(), type) == whitelist.end()) {
+        bool allowed = false;
+        for (const auto &entry : whitelist) {
+            if (!entry.empty() && entry.back() == '*') {
+                if (type.compare(0, entry.size() - 1, entry, 0, entry.size() - 1) == 0) {
+                    allowed = true;
+                    break;
+                }
+            }
+            else if (type == entry) {
+                allowed = true;
+                break;
+            }
+        }
+        if (!allowed) {
             event.setCancelled(true);
             return;
         }

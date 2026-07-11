@@ -31,7 +31,7 @@ struct Config {
     /// Permission -> claim-limit overrides; the highest matching tier wins.
     std::vector<std::pair<std::string, int>> limit_tiers;
     /// Entity types that may still spawn inside Admin claims (e.g. NPC plugins).
-    std::vector<std::string> admin_spawn_whitelist{"minecraft:npc"};
+    std::vector<std::string> admin_spawn_whitelist{"minecraft:npc", "npcp:*"};
 };
 
 class ProtectionStonesPlugin : public endstone::Plugin {
